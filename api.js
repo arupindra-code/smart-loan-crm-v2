@@ -1,61 +1,25 @@
-const app = document.getElementById("app");
+const CONFIG = {
+  API_BASE_URL: ""
+};
 
-function renderLogin(){
-  app.innerHTML = `
-    <div class="app-header">
-      <div class="header-small">Welcome to</div>
-      <div class="header-title">Smart Loan CRM</div>
-    </div>
+async function apiGet(endpoint, params = {}) {
+  if (!CONFIG.API_BASE_URL) {
+    throw new Error("API URL not configured.");
+  }
 
-    <div class="page">
-      <div class="card">
-        <h2>Sign in</h2>
-        <p style="margin-top:8px;color:#64748b;font-weight:600;">
-          Continue to manage your loan customers.
-        </p>
+  const url = new URL(CONFIG.API_BASE_URL);
 
-        <button class="btn" onclick="renderDashboard()">
-          Continue Demo
-        </button>
-      </div>
-    </div>
-  `;
+  url.searchParams.set("api", endpoint);
+
+  Object.keys(params).forEach(key => {
+    url.searchParams.set(key, params[key]);
+  });
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error("API request failed");
+  }
+
+  return await response.json();
 }
-
-function renderDashboard(){
-  app.innerHTML = `
-    <div class="app-header">
-      <div class="header-small">Dashboard</div>
-      <div class="header-title">Smart Loan CRM</div>
-    </div>
-
-    <div class="page">
-      <div class="stat-grid">
-        <div class="stat-card">
-          <div class="stat-number">0</div>
-          <div class="stat-label">Today Login</div>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-number">0</div>
-          <div class="stat-label">Active Customers</div>
-        </div>
-      </div>
-
-      <div class="card">
-        <button class="btn">➕ Add Customer</button>
-        <button class="btn btn-dark">📋 Customer List</button>
-        <button class="btn btn-success">🧮 EMI Calculator</button>
-      </div>
-    </div>
-
-    <div class="bottom-nav">
-      <div class="nav-item active">🏠<br>Home</div>
-      <div class="nav-item">👥<br>Customers</div>
-      <div class="nav-item">🧮<br>EMI</div>
-      <div class="nav-item">⚙️<br>Settings</div>
-    </div>
-  `;
-}
-
-renderLogin();
