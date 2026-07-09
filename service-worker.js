@@ -1,15 +1,17 @@
-const CACHE_NAME = "smart-loan-crm-v2-cache-v1";
+const CACHE_NAME = "smart-loan-crm-v2-cache-v2";
 
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
   "./style.css",
   "./app.js",
-  "./api.js",
+  "./src/services/api.js",
+  "./src/router/router.js",
   "./manifest.json"
 ];
 
 self.addEventListener("install", function(event){
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache){
       return cache.addAll(FILES_TO_CACHE);
@@ -17,10 +19,24 @@ self.addEventListener("install", function(event){
   );
 });
 
+self.addEventListener("activate", function(event){
+  event.waitUntil(
+    caches.keys().then(function(keys){
+      return Promise.all(
+        keys.map(function(key){
+          if(key !== CACHE_NAME){
+            return caches.delete(key);
+          }
+        })
+      );
+    })
+  );
+});
+
 self.addEventListener("fetch", function(event){
   event.respondWith(
-    caches.match(event.request).then(function(response){
-      return response || fetch(event.request);
+    fetch(event.request).catch(function(){
+      return caches.match(event.request);
     })
   );
 });
