@@ -1,5 +1,5 @@
 const CONFIG = {
-  API_BASE_URL: ""
+  API_BASE_URL: "https://script.google.com/macros/s/AKfycbxsYmChujJNiSx7f3noJDwguEghlzTrthd-kF95hXn1XPtPotzpBRWysvdKsndFBXhC/exec"
 };
 
 async function apiGet(endpoint, params = {}) {
@@ -20,6 +20,21 @@ async function apiGet(endpoint, params = {}) {
   if (!response.ok) {
     throw new Error("API request failed");
   }
+
+  return await response.json();
+}
+async function saveCustomer(customer) {
+
+  const response = await fetch(CONFIG.API_BASE_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      action: "addCustomer",
+      customer: customer
+    })
+  });
 
   return await response.json();
 }
