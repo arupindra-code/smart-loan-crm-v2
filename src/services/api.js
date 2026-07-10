@@ -1,5 +1,5 @@
 const CONFIG = {
-  API_BASE_URL: "https://script.google.com/macros/s/AKfycbxsYmChujJNiSx7f3noJDwguEghlzTrthd-kF95hXn1XPtPotzpBRWysvdKsndFBXhC/exec"
+  API_BASE_URL: "https://script.google.com/macros/s/AKfycbyfZbtMniCd36boFsnV9FTvrHTD1GYhb1020K1EHlUuHWN9ewfQN9TShTWNuOExk95u/exec"
 };
 
 async function apiGet(endpoint, params = {}) {
@@ -24,11 +24,11 @@ async function apiGet(endpoint, params = {}) {
   return await response.json();
 }
 async function saveCustomer(customer) {
-
-  const response = await fetch(CONFIG.API_BASE_URL, {
+  await fetch(CONFIG.API_BASE_URL, {
     method: "POST",
+    mode: "no-cors",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": "text/plain;charset=utf-8"
     },
     body: JSON.stringify({
       action: "addCustomer",
@@ -36,5 +36,8 @@ async function saveCustomer(customer) {
     })
   });
 
-  return await response.json();
+return {
+  success: true,
+  message: "Customer Added Successfully ✅"
+};
 }
