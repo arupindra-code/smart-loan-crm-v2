@@ -155,11 +155,29 @@ function saveCustomerDemo(){
     return;
   }
 
-  alert("Customer form ready. Google Sheet save will be connected next.");
-}
+  const customer = {
+    id: Date.now(),
+    customerName: document.getElementById("customerName").value.trim(),
+    mobileNumber: mobile,
+    loginDate: document.getElementById("loginDate").value,
+    disbursementDate: document.getElementById("disbursementDate").value,
+    vehicleModel: document.getElementById("vehicleModel").value.trim(),
+    vehicleNumber: document.getElementById("vehicleNumber").value.trim(),
+    loginDealer: document.getElementById("loginDealer").value.trim(),
+    disbursementDealer: document.getElementById("disbursementDealer").value.trim(),
+    finoneId: document.getElementById("finoneId").value.trim(),
+    lanId: document.getElementById("lanId").value.trim(),
+    emiAmount: document.getElementById("emiAmount").value.trim(),
+    tenure: document.getElementById("tenure").value.trim()
+  };
 
-function clearAddCustomerForm(){
-  document.querySelectorAll(".input").forEach(input => input.value = "");
+  const customers = JSON.parse(localStorage.getItem("customers") || "[]");
+  customers.unshift(customer);
+
+  localStorage.setItem("customers", JSON.stringify(customers));
+
+  alert("Customer saved successfully");
+  clearAddCustomerForm();
 }
 
 function renderCustomerList(){
