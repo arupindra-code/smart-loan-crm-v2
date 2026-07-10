@@ -84,7 +84,82 @@ function renderPage(title, subtitle, active){
 }
 
 function renderAddCustomer(){
-  renderPage("Add Customer", "Customer Module", "home");
+  app.innerHTML = `
+    <div class="app-header">
+      <div class="header-small">Customer Module</div>
+      <div class="header-title">Add Customer</div>
+    </div>
+
+    <div class="page">
+      <div class="card">
+        <h2>Add Customer</h2>
+
+        <input class="input" id="customerName" placeholder="Customer Name">
+        <input class="input" id="mobileNumber" placeholder="Mobile Number *">
+        <input class="input" id="loginDate" type="date">
+        <input class="input" id="disbursementDate" type="date">
+
+        <input class="input" id="vehicleModel" placeholder="Vehicle Model">
+        <input class="input" id="vehicleNumber" placeholder="Vehicle Number">
+
+        <input class="input" id="loginDealer" placeholder="Login Dealer">
+        <input class="input" id="disbursementDealer" placeholder="Disbursement Dealer">
+
+        <input class="input" id="finoneId" placeholder="FINONE ID / Loan Number">
+        <input class="input" id="lanId" placeholder="LAN ID">
+
+        <input class="input" id="emiAmount" placeholder="EMI Amount">
+        <input class="input" id="tenure" placeholder="Tenure">
+
+        <h3 style="margin-top:18px;">Reference Details</h3>
+
+        <input class="input" id="ref1Name" placeholder="Ref 1 Name">
+        <input class="input" id="ref1Mobile" placeholder="Ref 1 Mobile">
+        <input class="input" id="ref1Relation" placeholder="Ref 1 Relation">
+
+        <input class="input" id="ref2Name" placeholder="Ref 2 Name">
+        <input class="input" id="ref2Mobile" placeholder="Ref 2 Mobile">
+        <input class="input" id="ref2Relation" placeholder="Ref 2 Relation">
+
+        <h3 style="margin-top:18px;">Nominee Details</h3>
+
+        <input class="input" id="nom1Name" placeholder="Nominee 1 Name">
+        <input class="input" id="nom1Mobile" placeholder="Nominee 1 Mobile">
+        <input class="input" id="nom1Relation" placeholder="Nominee 1 Relation">
+
+        <input class="input" id="nom2Name" placeholder="Nominee 2 Name">
+        <input class="input" id="nom2Mobile" placeholder="Nominee 2 Mobile">
+        <input class="input" id="nom2Relation" placeholder="Nominee 2 Relation">
+
+        <h3 style="margin-top:18px;">Extra Fields</h3>
+
+        <input class="input" id="extra1" placeholder="Extra 1">
+        <input class="input" id="extra2" placeholder="Extra 2">
+        <input class="input" id="extra3" placeholder="Extra 3">
+
+        <button class="btn" onclick="saveCustomerDemo()">Save Customer</button>
+        <button class="btn btn-dark" onclick="clearAddCustomerForm()">Clear Form</button>
+        <button class="btn btn-danger" onclick="Router.navigate('dashboard')">Back to Dashboard</button>
+      </div>
+    </div>
+
+    ${bottomNav("home")}
+  `;
+}
+
+function saveCustomerDemo(){
+  const mobile = document.getElementById("mobileNumber").value.trim();
+
+  if(!mobile){
+    alert("Mobile Number is required");
+    return;
+  }
+
+  alert("Customer form ready. Google Sheet save will be connected next.");
+}
+
+function clearAddCustomerForm(){
+  document.querySelectorAll(".input").forEach(input => input.value = "");
 }
 
 function renderCustomerList(){
@@ -98,7 +173,6 @@ function renderEmi(){
 function renderSettings(){
   renderPage("Settings", "App Preferences", "settings");
 }
-
 function bottomNav(active){
   return `
     <div class="bottom-nav">
