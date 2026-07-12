@@ -631,8 +631,57 @@ if (window.deliveryPhotoData) {
   }
 }
 
-function renderCustomerList(){
-  renderPage("Customer List", "Customer Module", "customers");
+async function renderCustomerList() {
+  app.innerHTML = `
+    <div class="app-header">
+      <div class="header-small">Customer Module</div>
+      <div class="header-title">Customer List</div>
+    </div>
+
+    <div class="page">
+      <div class="card customer-list-card">
+
+        <input
+          class="input"
+          id="customerSearchInput"
+          type="search"
+          placeholder="Search name, mobile, FINONE or vehicle"
+          oninput="filterCustomerList()"
+        >
+
+        <div
+          id="customerListStatus"
+          class="customer-list-status"
+        >
+          Loading customers...
+        </div>
+
+        <div
+          id="customerListContainer"
+          class="customer-list-container"
+        ></div>
+
+      </div>
+    </div>
+
+    ${bottomNav("customers")}
+  `;
+
+  try {
+    const customers = await getCustomers();
+
+    window.customerListData = customers;
+
+    renderCustomerCards(customers);
+
+  } catch (error) {
+    console.error(error);
+
+    document.getElementById(
+      "customerListStatus"
+    ).textContent =
+      "Customer list load failed";
+  }
 }
 
 function renderEmi() {
@@ -860,6 +909,1018 @@ function clearEmiCalculator() {
   document.getElementById("resultBox").style.display = "none";
 }
 
+function renderCustomerCards(customers) {
+  const container = document.getElementById(
+    "customerListContainer"
+  );
+
+  const status = document.getElementById(
+    "customerListStatus"
+  );
+
+  if (!container || !status) {
+    return;
+  }
+
+  if (!customers || customers.length === 0) {
+    status.textContent = "No customers found";
+    container.innerHTML = "";
+    return;
+  }
+
+  status.textContent =
+    customers.length + " customer found";
+
+  container.innerHTML = customers
+    .map(function(customer) {
+      return `
+        <div class="customer-list-item">
+          <div class="customer-list-top">
+            <div class="customer-avatar">
+              ${getCustomerInitial(
+                customer.customerName
+              )}
+            </div>
+
+            <div class="customer-main-info">
+              <div class="customer-list-name">
+                ${escapeHtml(
+                  customer.customerName ||
+                  "Unnamed Customer"
+                )}
+              </div>
+
+              <div class="customer-list-mobile">
+                ${escapeHtml(
+                  customer.mobileNumber || "-"
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div class="customer-list-meta">
+            <div>
+              <span>FINONE</span>
+              <strong>
+                ${escapeHtml(
+                  customer.finoneId || "-"
+                )}
+              </strong>
+            </div>
+
+            <div>
+              <span>Vehicle</span>
+              <strong>
+                ${escapeHtml(
+                  customer.vehicleNumber ||
+                  customer.vehicleModel ||
+                  "-"
+                )}
+              </strong>
+            </div>
+          </div>
+
+          <button
+            class="mini-btn customer-view-btn"
+            type="button"
+            onclick="openCustomerDetails(${customer.rowId})"
+          >
+            View Details
+          </button>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+
+function filterCustomerList() {
+  const input = document.getElementById(
+    "customerSearchInput"
+  );
+
+  const keyword = String(
+    input ? input.value : ""
+  )
+    .trim()
+    .toLowerCase();
+
+  const customers =
+    window.customerListData || [];
+
+  if (!keyword) {
+    renderCustomerCards(customers);
+    return;
+  }
+
+  const filtered = customers.filter(
+    function(customer) {
+      return [
+        customer.customerName,
+        customer.mobileNumber,
+        customer.finoneId,
+        customer.vehicleNumber,
+        customer.vehicleModel,
+        customer.loginDealer,
+        customer.disbursementDealer
+      ].some(function(value) {
+        return String(value || "")
+          .toLowerCase()
+          .includes(keyword);
+      });
+    }
+  );
+
+  renderCustomerCards(filtered);
+}
+
+
+function getCustomerInitial(name) {
+  const cleanName = String(name || "").trim();
+
+  return cleanName
+    ? cleanName.charAt(0).toUpperCase()
+    : "C";
+}
+
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+
+async function openCustomerDetails(rowId) {
+  window.selectedCustomerRowId = rowId;
+
+  app.innerHTML = `
+    <div class="app-header">
+      <div class="header-small">Customer Module</div>
+      <div class="header-title">Customer Details</div>
+    </div>
+
+    <div class="page">
+      <div class="card">
+        <div id="customerDetailsStatus">
+          Loading customer details...
+        </div>
+
+        <div
+          id="customerDetailsContainer"
+          style="display:none;"
+        ></div>
+      </div>
+    </div>
+
+    ${bottomNav("customers")}
+  `;
+
+  try {
+    const customer = await getCustomer(rowId);
+
+    window.selectedCustomerData = customer;
+
+    renderCustomerDetails(customer);
+
+  } catch (error) {
+    console.error(error);
+
+    document.getElementById(
+      "customerDetailsStatus"
+    ).textContent =
+      "Customer details load failed";
+  }
+}
+
+function renderCustomerDetails(customer) {
+  const status = document.getElementById(
+    "customerDetailsStatus"
+  );
+
+  const container = document.getElementById(
+    "customerDetailsContainer"
+  );
+
+  if (!container || !status) return;
+
+  status.style.display = "none";
+  container.style.display = "block";
+
+  const customerName =
+    customer.customerName || "Unnamed Customer";
+
+  const vehicleText =
+    customer.vehicleNumber ||
+    customer.vehicleModel ||
+    "No Vehicle Details";
+
+  container.innerHTML = `
+    <div class="premium-profile-card">
+      <div class="premium-profile-top">
+        <div class="premium-profile-avatar">
+          ${getCustomerInitial(customerName)}
+        </div>
+
+        <div class="premium-profile-info">
+          <div class="premium-profile-name">
+            ${escapeHtml(customerName)}
+          </div>
+
+          <div class="premium-profile-mobile">
+            ${escapeHtml(customer.mobileNumber || "-")}
+          </div>
+
+          <div class="premium-profile-vehicle">
+            ${escapeHtml(vehicleText)}
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-quick-actions">
+        <button
+          type="button"
+          class="profile-action-btn call-action"
+          onclick="callPhoneNumber('${safePhone(customer.mobileNumber)}')"
+        >
+          <span>📞</span>
+          Call
+        </button>
+
+        <button
+          type="button"
+          class="profile-action-btn whatsapp-action"
+          onclick="whatsappCustomer()"
+        >
+          <span>💬</span>
+          WhatsApp
+        </button>
+
+        <button
+          type="button"
+          class="profile-action-btn copy-action"
+          onclick="copyCustomerDetails()"
+        >
+          <span>📋</span>
+          Copy Details
+        </button>
+      </div>
+    </div>
+
+    ${renderPremiumInfoSection(
+      "💰",
+      "Loan Information",
+      [
+        ["FINONE ID", customer.finoneId],
+        ["LAN ID", customer.lanId],
+        ["EMI Amount", formatMoneyValue(customer.emiAmount)],
+        ["Tenure", formatTenureValue(customer.tenure)]
+      ]
+    )}
+
+    ${renderPremiumInfoSection(
+      "🏍️",
+      "Vehicle Information",
+      [
+        ["Vehicle Model", customer.vehicleModel],
+        ["Vehicle Number", customer.vehicleNumber],
+        ["Login Date", customer.loginDate],
+        ["Disbursement Date", customer.disbursementDate],
+        ["Login Dealer", customer.loginDealer],
+        ["Disbursement Dealer", customer.disbursementDealer]
+      ]
+    )}
+
+    <div class="contact-section-card">
+      <div class="premium-section-heading">
+        <div class="premium-section-icon">👥</div>
+
+        <div>
+          <div class="premium-section-title">
+            References
+          </div>
+          <div class="premium-section-subtitle">
+            Tap call to contact directly
+          </div>
+        </div>
+      </div>
+
+      <div class="contact-card-grid">
+        ${renderContactCard(
+          "Reference 1",
+          customer.ref1Name,
+          customer.ref1Mobile,
+          customer.ref1Relation,
+          "👤"
+        )}
+
+        ${renderContactCard(
+          "Reference 2",
+          customer.ref2Name,
+          customer.ref2Mobile,
+          customer.ref2Relation,
+          "👤"
+        )}
+      </div>
+    </div>
+
+    <div class="contact-section-card">
+      <div class="premium-section-heading">
+        <div class="premium-section-icon">🧑</div>
+
+        <div>
+          <div class="premium-section-title">
+            Nominees
+          </div>
+          <div class="premium-section-subtitle">
+            Nominee contact information
+          </div>
+        </div>
+      </div>
+
+      <div class="contact-card-grid">
+        ${renderContactCard(
+          "Nominee 1",
+          customer.nom1Name,
+          customer.nom1Mobile,
+          customer.nom1Relation,
+          "🧑"
+        )}
+
+        ${renderContactCard(
+          "Nominee 2",
+          customer.nom2Name,
+          customer.nom2Mobile,
+          customer.nom2Relation,
+          "🧑"
+        )}
+      </div>
+    </div>
+
+    ${renderPremiumInfoSection(
+      "📝",
+      "Extra Details",
+      [
+        ["Extra 1", customer.extra1],
+        ["Extra 2", customer.extra2],
+        ["Extra 3", customer.extra3]
+      ]
+    )}
+
+    <div class="details-bottom-actions">
+      <button
+        class="btn"
+        type="button"
+        onclick="viewDeliveryPhoto()"
+        ${customer.deliveryPhotoId ? "" : "disabled"}
+      >
+        📷 ${
+          customer.deliveryPhotoId
+            ? "View Delivery Photo"
+            : "No Delivery Photo"
+        }
+      </button>
+
+      <button
+        class="btn btn-dark"
+        type="button"
+        onclick="editSelectedCustomer()"
+      >
+        ✏️ Edit Customer
+      </button>
+
+      <button
+        class="btn btn-danger"
+        type="button"
+        onclick="Router.navigate('customer-list')"
+      >
+        Back to Customer List
+      </button>
+    </div>
+  `;
+}
+
+function renderPremiumInfoSection(icon, title, rows) {
+  const validRows = rows.filter(function(row) {
+    return String(row[1] || "").trim() !== "";
+  });
+
+  if (validRows.length === 0) {
+    return "";
+  }
+
+  return `
+    <div class="premium-info-card">
+      <div class="premium-section-heading">
+        <div class="premium-section-icon">
+          ${icon}
+        </div>
+
+        <div class="premium-section-title">
+          ${escapeHtml(title)}
+        </div>
+      </div>
+
+      <div class="premium-info-grid">
+        ${validRows
+          .map(function(row) {
+            return `
+              <div class="premium-info-item">
+                <div class="premium-info-label">
+                  ${escapeHtml(row[0])}
+                </div>
+
+                <div class="premium-info-value">
+                  ${escapeHtml(row[1])}
+                </div>
+              </div>
+            `;
+          })
+          .join("")}
+      </div>
+    </div>
+  `;
+}
+
+
+function renderContactCard(
+  title,
+  name,
+  mobile,
+  relation,
+  icon
+) {
+  const cleanName = String(name || "").trim();
+  const cleanMobile = String(mobile || "").trim();
+  const cleanRelation = String(relation || "").trim();
+
+  if (!cleanName && !cleanMobile && !cleanRelation) {
+    return "";
+  }
+
+  return `
+    <div class="premium-contact-card">
+      <div class="contact-card-top">
+        <div class="contact-avatar">
+          ${icon}
+        </div>
+
+        <div class="contact-card-info">
+          <div class="contact-card-label">
+            ${escapeHtml(title)}
+          </div>
+
+          <div class="contact-card-name">
+            ${escapeHtml(cleanName || "Not Available")}
+          </div>
+
+          ${
+            cleanRelation
+              ? `
+                <div class="contact-card-relation">
+                  ${escapeHtml(cleanRelation)}
+                </div>
+              `
+              : ""
+          }
+        </div>
+      </div>
+
+      <div class="contact-number-row">
+        <span>
+          ${escapeHtml(cleanMobile || "No mobile number")}
+        </span>
+
+        <button
+          type="button"
+          class="contact-call-btn"
+          onclick="callPhoneNumber('${safePhone(cleanMobile)}')"
+          ${cleanMobile ? "" : "disabled"}
+        >
+          📞 Call
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+
+function safePhone(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+
+function callPhoneNumber(number) {
+  const cleanNumber = safePhone(number);
+
+  if (!cleanNumber) {
+    alert("Mobile number not available");
+    return;
+  }
+
+  window.location.href = "tel:" + cleanNumber;
+}
+
+
+function formatMoneyValue(value) {
+  const number = Number(value);
+
+  if (!number) {
+    return String(value || "");
+  }
+
+  return "₹" + number.toLocaleString("en-IN");
+}
+
+
+function formatTenureValue(value) {
+  if (!value) {
+    return "";
+  }
+
+  return String(value) + " Months";
+}
+
+
+
+function renderDetailsSection(title, rows) {
+  const validRows = rows.filter(function(row) {
+    return String(row[1] || "").trim() !== "";
+  });
+
+  if (validRows.length === 0) {
+    return "";
+  }
+
+  return `
+    <div class="info-section">
+      <div class="info-title">
+        ${escapeHtml(title)}
+      </div>
+
+      ${validRows
+        .map(function(row) {
+          return `
+            <div class="info-row">
+              <span>${escapeHtml(row[0])}</span>
+              <b>${escapeHtml(row[1])}</b>
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
+function callCustomer() {
+  const customer = window.selectedCustomerData;
+
+  if (!customer || !customer.mobileNumber) {
+    alert("Customer mobile number not available");
+    return;
+  }
+
+  window.location.href =
+    "tel:" + customer.mobileNumber;
+}
+
+
+function whatsappCustomer() {
+  const customer = window.selectedCustomerData;
+
+  if (!customer || !customer.mobileNumber) {
+    alert("Customer mobile number not available");
+    return;
+  }
+
+  let number = String(customer.mobileNumber)
+    .replace(/\D/g, "");
+
+  if (number.length === 10) {
+    number = "91" + number;
+  }
+
+  window.open(
+    "https://wa.me/" + number,
+    "_blank"
+  );
+}
+
+async function viewDeliveryPhoto() {
+  const customer = window.selectedCustomerData;
+
+  if (!customer || !customer.deliveryPhotoId) {
+    alert("No delivery photo available");
+    return;
+  }
+
+  showPhotoLoadingModal();
+
+  try {
+    const photo = await getDeliveryPhoto(
+      customer.deliveryPhotoId
+    );
+
+    showDeliveryPhotoModal(photo);
+
+  } catch (error) {
+    console.error(error);
+    closeDeliveryPhotoModal();
+
+    alert(
+      error.message ||
+      "Delivery photo load failed"
+    );
+  }
+}
+
+function showPhotoLoadingModal() {
+  closeDeliveryPhotoModal();
+
+  const modal = document.createElement("div");
+  modal.id = "deliveryPhotoModal";
+  modal.className = "photo-modal-overlay";
+
+  modal.innerHTML = `
+    <div class="photo-modal-card loading-photo-card">
+      <div class="photo-loading-spinner"></div>
+      <div class="photo-loading-text">
+        Loading delivery photo...
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+}
+
+
+function showDeliveryPhotoModal(photo) {
+  const modal = document.getElementById(
+    "deliveryPhotoModal"
+  );
+
+  if (!modal) return;
+
+  const imageSource =
+    "data:" +
+    (photo.mimeType || "image/jpeg") +
+    ";base64," +
+    photo.base64;
+
+  modal.innerHTML = `
+    <div class="photo-modal-card">
+      <div class="photo-modal-header">
+        <div>
+          <div class="photo-modal-title">
+            Delivery Photo
+          </div>
+
+          <div class="photo-modal-file-name">
+            ${escapeHtml(
+              photo.fileName || "Delivery Photo"
+            )}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          class="photo-modal-close"
+          onclick="closeDeliveryPhotoModal()"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div class="photo-modal-image-wrap">
+        <img
+          src="${imageSource}"
+          alt="Delivery Photo"
+          class="photo-modal-image"
+        >
+      </div>
+
+      <button
+        type="button"
+        class="btn btn-dark"
+        onclick="closeDeliveryPhotoModal()"
+      >
+        Close Photo
+      </button>
+    </div>
+  `;
+}
+
+
+function closeDeliveryPhotoModal() {
+  const modal = document.getElementById(
+    "deliveryPhotoModal"
+  );
+
+  if (modal) {
+    modal.remove();
+  }
+}
+
+function editSelectedCustomer() {
+  const customer = window.selectedCustomerData;
+
+  if (!customer) {
+    alert("Customer data not available");
+    return;
+  }
+
+  window.deliveryPhotoData = null;
+  window.editRemovePhoto = false;
+
+  // একই Add Customer form ব্যবহার করছি
+  renderAddCustomer();
+
+  document.querySelector(".header-title").textContent =
+    "Edit Customer";
+
+  const buttons = document.querySelectorAll(
+    ".form-action-area .btn"
+  );
+
+  buttons[0].textContent = "Update Customer";
+  buttons[0].setAttribute(
+    "onclick",
+    "updateSelectedCustomer()"
+  );
+
+  buttons[1].textContent = "Reset Changes";
+  buttons[1].setAttribute(
+    "onclick",
+    "fillEditCustomerForm()"
+  );
+
+  buttons[2].textContent = "Back to Details";
+  buttons[2].setAttribute(
+    "onclick",
+    `openCustomerDetails(${customer.rowId})`
+  );
+
+  const photoTitle = document.querySelector(
+    ".delivery-photo-title h3"
+  );
+
+  if (photoTitle) {
+    photoTitle.textContent = "Change Delivery Photo";
+  }
+
+  fillEditCustomerForm();
+  showExistingPhotoOptions();
+}
+
+function fillEditCustomerForm() {
+  const customer = window.selectedCustomerData;
+
+  if (!customer) return;
+
+  const values = {
+    customerName: customer.customerName,
+    mobileNumber: customer.mobileNumber,
+    loginDate: customer.loginDate,
+    disbursementDate: customer.disbursementDate,
+
+    vehicleModel: customer.vehicleModel,
+    vehicleNumber: customer.vehicleNumber,
+    loginDealer: customer.loginDealer,
+    disbursementDealer: customer.disbursementDealer,
+    finoneId: customer.finoneId,
+    lanId: customer.lanId,
+    emiAmount: customer.emiAmount,
+    tenure: customer.tenure,
+
+    ref1Name: customer.ref1Name,
+    ref1Mobile: customer.ref1Mobile,
+    ref1Relation: customer.ref1Relation,
+
+    ref2Name: customer.ref2Name,
+    ref2Mobile: customer.ref2Mobile,
+    ref2Relation: customer.ref2Relation,
+
+    nom1Name: customer.nom1Name,
+    nom1Mobile: customer.nom1Mobile,
+    nom1Relation: customer.nom1Relation,
+
+    nom2Name: customer.nom2Name,
+    nom2Mobile: customer.nom2Mobile,
+    nom2Relation: customer.nom2Relation,
+
+    extra1: customer.extra1,
+    extra2: customer.extra2,
+    extra3: customer.extra3
+  };
+
+  Object.keys(values).forEach(function(id) {
+    const field = document.getElementById(id);
+
+    if (field) {
+      field.value = values[id] || "";
+    }
+  });
+
+  window.deliveryPhotoData = null;
+  window.editRemovePhoto = false;
+
+  removeDeliveryPhoto();
+  showExistingPhotoOptions();
+}
+
+function showExistingPhotoOptions() {
+  const customer = window.selectedCustomerData;
+  const section = document.querySelector(
+    ".delivery-photo-section"
+  );
+
+  if (!customer || !section) return;
+
+  const oldBox = document.getElementById(
+    "existingPhotoActions"
+  );
+
+  if (oldBox) {
+    oldBox.remove();
+  }
+
+  if (!customer.deliveryPhotoId) {
+    return;
+  }
+
+  const box = document.createElement("div");
+  box.id = "existingPhotoActions";
+  box.className = "existing-photo-actions";
+
+  box.innerHTML = `
+    <div class="existing-photo-text">
+      ✅ Current delivery photo available
+    </div>
+
+    <div class="existing-photo-buttons">
+      <button
+        type="button"
+        class="existing-photo-view"
+        onclick="viewDeliveryPhoto()"
+      >
+        📷 View Current
+      </button>
+
+      <button
+        type="button"
+        class="existing-photo-remove"
+        onclick="removeExistingDeliveryPhoto()"
+      >
+        🗑 Remove Current
+      </button>
+    </div>
+  `;
+
+  section.insertBefore(
+    box,
+    document.getElementById("deliveryPhoto")
+  );
+}
+
+function removeExistingDeliveryPhoto() {
+  const confirmed = confirm(
+    "Current delivery photo remove করবেন?"
+  );
+
+  if (!confirmed) return;
+
+  window.editRemovePhoto = true;
+
+  const box = document.getElementById(
+    "existingPhotoActions"
+  );
+
+  if (box) {
+    box.innerHTML = `
+      <div class="photo-remove-warning">
+        Current photo will be removed after Update Customer.
+      </div>
+    `;
+  }
+}
+
+async function updateSelectedCustomer() {
+  const oldCustomer = window.selectedCustomerData;
+
+  if (!oldCustomer || !oldCustomer.rowId) {
+    alert("Customer row not found");
+    return;
+  }
+
+  const getValue = function(id) {
+    const field = document.getElementById(id);
+    return field ? field.value.trim() : "";
+  };
+
+  const customer = {
+    customerName: getValue("customerName"),
+    mobileNumber: getValue("mobileNumber"),
+    loginDate: getValue("loginDate"),
+    disbursementDate: getValue("disbursementDate"),
+
+    vehicleModel: getValue("vehicleModel"),
+    vehicleNumber: getValue("vehicleNumber"),
+    loginDealer: getValue("loginDealer"),
+    disbursementDealer: getValue("disbursementDealer"),
+    finoneId: getValue("finoneId"),
+    lanId: getValue("lanId"),
+    emiAmount: getValue("emiAmount"),
+    tenure: getValue("tenure"),
+
+    ref1Name: getValue("ref1Name"),
+    ref1Mobile: getValue("ref1Mobile"),
+    ref1Relation: getValue("ref1Relation"),
+
+    ref2Name: getValue("ref2Name"),
+    ref2Mobile: getValue("ref2Mobile"),
+    ref2Relation: getValue("ref2Relation"),
+
+    nom1Name: getValue("nom1Name"),
+    nom1Mobile: getValue("nom1Mobile"),
+    nom1Relation: getValue("nom1Relation"),
+
+    nom2Name: getValue("nom2Name"),
+    nom2Mobile: getValue("nom2Mobile"),
+    nom2Relation: getValue("nom2Relation"),
+
+    extra1: getValue("extra1"),
+    extra2: getValue("extra2"),
+    extra3: getValue("extra3")
+  };
+
+  if (!customer.mobileNumber) {
+    alert("Mobile Number is required");
+    return;
+  }
+
+  let photoData = null;
+
+  if (window.deliveryPhotoData) {
+    const cleanVehicleNumber =
+      customer.vehicleNumber
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, "");
+
+    const fileName =
+      (
+        cleanVehicleNumber ||
+        customer.mobileNumber ||
+        "DELIVERY_PHOTO"
+      ) + "_delivery.jpg";
+
+    photoData = {
+      base64: window.deliveryPhotoData.base64,
+      mimeType: window.deliveryPhotoData.mimeType,
+      fileName: fileName
+    };
+  }
+
+  const updateButton = document.querySelector(
+    ".form-action-area .btn"
+  );
+
+  try {
+    if (updateButton) {
+      updateButton.disabled = true;
+      updateButton.textContent = "Updating...";
+    }
+
+    await updateCustomer(
+      oldCustomer.rowId,
+      customer,
+      photoData,
+      window.editRemovePhoto
+    );
+
+    alert("Customer Updated Successfully ✅");
+
+    setTimeout(function() {
+      openCustomerDetails(oldCustomer.rowId);
+    }, 1000);
+
+  } catch (error) {
+    console.error(error);
+
+    alert(
+      "Update failed: " +
+      (error.message || "Unknown error")
+    );
+
+    if (updateButton) {
+      updateButton.disabled = false;
+      updateButton.textContent = "Update Customer";
+    }
+  }
+}
+
 Router.register("login", renderLogin);
 Router.register("dashboard", renderDashboard);
 Router.register("add-customer", renderAddCustomer);
@@ -1030,5 +2091,84 @@ function removeDeliveryPhoto() {
 
   if (uploadArea) {
     uploadArea.style.display = "flex";
+  }
+}
+
+async function copyCustomerDetails() {
+  const customer = window.selectedCustomerData;
+
+  if (!customer) {
+    alert("Customer details not available");
+    return;
+  }
+
+  const lines = [
+    "🛵 SMART LOAN CRM",
+    "",
+    "👤 Customer",
+    customer.customerName || "NA",
+    "",
+    "📞 Mobile",
+    customer.mobileNumber || "NA",
+    "",
+    "🏍 Vehicle",
+    customer.vehicleModel || "NA",
+    "",
+    "🔢 Vehicle No",
+    customer.vehicleNumber || "NA",
+    "",
+    "💰 EMI",
+    customer.emiAmount
+      ? "₹" + customer.emiAmount
+      : "NA",
+    "",
+    "📅 Tenure",
+    customer.tenure
+      ? customer.tenure + " Months"
+      : "NA",
+    "",
+    "━━━━━━━━━━━━━━",
+    "",
+    "👥 Reference 1",
+    customer.ref1Name || "NA",
+    "📞 " + (customer.ref1Mobile || "NA"),
+    "",
+    "👥 Reference 2",
+    customer.ref2Name || "NA",
+    "📞 " + (customer.ref2Mobile || "NA"),
+    "",
+    "━━━━━━━━━━━━━━",
+    "",
+    "🧑 Nominee 1",
+    customer.nom1Name || "NA",
+    "📞 " + (customer.nom1Mobile || "NA"),
+    "",
+    "🧑 Nominee 2",
+    customer.nom2Name || "NA",
+    "📞 " + (customer.nom2Mobile || "NA")
+  ];
+
+  const copyText = lines.join("\n");
+
+  try {
+    await navigator.clipboard.writeText(copyText);
+
+    alert("Customer Details Copied ✅");
+
+  } catch (error) {
+    const textarea =
+      document.createElement("textarea");
+
+    textarea.value = copyText;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+
+    document.body.appendChild(textarea);
+    textarea.select();
+
+    document.execCommand("copy");
+    textarea.remove();
+
+    alert("Customer Details Copied ✅");
   }
 }
