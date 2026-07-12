@@ -1,5 +1,5 @@
 const CONFIG = {
-  API_BASE_URL: "https://script.google.com/macros/s/AKfycbyfZbtMniCd36boFsnV9FTvrHTD1GYhb1020K1EHlUuHWN9ewfQN9TShTWNuOExk95u/exec"
+  API_BASE_URL: "https://script.google.com/macros/s/AKfycbzji6oG00RZNTlLUOZhBX9sNgvwcxo9thPAKngknA8elqjPphdyEl-Ks3mZk8wzC3VS/exec"
 };
 
 async function apiGet(endpoint, params = {}) {
