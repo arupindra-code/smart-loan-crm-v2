@@ -419,6 +419,75 @@ function renderAddCustomer() {
           </div>
         </div>
 
+<hr style="margin:20px 0">
+
+<div class="delivery-photo-section">
+  <div class="delivery-photo-title">
+    <span class="delivery-photo-icon">📷</span>
+
+    <div>
+      <h3>Upload Delivery Photo</h3>
+      <p>Select From Camera or Gallery</p>
+    </div>
+  </div>
+
+  <input
+    type="file"
+    id="deliveryPhoto"
+    accept="image/jpeg,image/png,image/webp"
+    onchange="previewDeliveryPhoto(event)"
+    hidden
+  >
+
+  <label
+    for="deliveryPhoto"
+    id="deliveryUploadArea"
+    class="delivery-upload-area"
+  >
+    <div class="upload-camera-icon">📸</div>
+
+    <div class="upload-main-text">
+      Tap to Select Photo
+    </div>
+
+    <div class="upload-sub-text">
+      JPG, PNG or WebP
+    </div>
+  </label>
+
+  <div
+    id="deliveryPreviewBox"
+    class="delivery-preview-box"
+    style="display:none;"
+  >
+    <img
+      id="deliveryPreview"
+      alt="Delivery Photo Preview"
+    >
+
+    <div class="delivery-preview-footer">
+      <div>
+        <div class="preview-success">
+          ✅ Photo Selected
+        </div>
+
+        <div
+          id="photoStatus"
+          class="preview-file-name"
+        ></div>
+      </div>
+
+      <button
+        type="button"
+        class="remove-photo-btn"
+        onclick="removeDeliveryPhoto()"
+      >
+        ✕ Remove
+      </button>
+    </div>
+  </div>
+</div>
+
         <div class="form-action-area">
           <button
             class="btn"
@@ -519,8 +588,29 @@ async function saveCustomerDemo() {
       saveButton.disabled = true;
       saveButton.textContent = "Saving...";
     }
+let photoData = null;
 
-    const result = await saveCustomer(customer);
+if (window.deliveryPhotoData) {
+  const vehicleNumber =
+    document.getElementById("vehicleNumber").value
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "");
+
+  const mobileNumber =
+    document.getElementById("mobileNumber").value.trim();
+
+  const photoFileName =
+    (vehicleNumber || mobileNumber || "DELIVERY_PHOTO") +
+    "_delivery.jpg";
+
+  photoData = {
+    base64: window.deliveryPhotoData.base64,
+    mimeType: window.deliveryPhotoData.mimeType,
+    fileName: photoFileName
+  };
+}
+    const result = await saveCustomer(customer, photoData);
 
     alert(result.message || "Customer saved successfully");
     clearAddCustomerForm();
@@ -783,4 +873,162 @@ Router.navigate("login");
 function toggleFormSection(button) {
   const section = button.closest(".form-section");
   section.classList.toggle("open");
+}
+
+window.deliveryPhotoData = null;
+
+async function previewDeliveryPhoto(event) {
+  const file = event.target.files[0];
+
+  if (!file) return;
+
+  const allowedTypes = [
+    "image/jpeg",
+    "image/png",
+    "image/webp"
+  ];
+
+  if (!allowedTypes.includes(file.type)) {
+    alert("Please select a JPG, PNG or WebP image");
+    event.target.value = "";
+    return;
+  }
+
+  try {
+    const compressedPhoto = await compressDeliveryPhoto(file);
+
+    window.deliveryPhotoData = compressedPhoto;
+
+    const preview = document.getElementById("deliveryPreview");
+    const previewBox = document.getElementById("deliveryPreviewBox");
+    const uploadArea = document.getElementById("deliveryUploadArea");
+    const photoStatus = document.getElementById("photoStatus");
+
+    preview.src =
+      "data:" +
+      compressedPhoto.mimeType +
+      ";base64," +
+      compressedPhoto.base64;
+
+    const originalKB = Math.round(file.size / 1024);
+    const compressedKB = Math.round(
+      compressedPhoto.size / 1024
+    );
+
+    photoStatus.textContent =
+      originalKB +
+      " KB → " +
+      compressedKB +
+      " KB";
+
+    previewBox.style.display = "block";
+    uploadArea.style.display = "none";
+
+  } catch (error) {
+    alert("Photo processing failed: " + error.message);
+    event.target.value = "";
+  }
+}
+
+function compressDeliveryPhoto(file) {
+  return new Promise(function(resolve, reject) {
+    const reader = new FileReader();
+
+    reader.onload = function(readerEvent) {
+      const image = new Image();
+
+      image.onload = function() {
+        const maxWidth = 1280;
+        const maxHeight = 1280;
+
+        let width = image.width;
+        let height = image.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(
+            maxWidth / width,
+            maxHeight / height
+          );
+
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const context = canvas.getContext("2d");
+
+        context.drawImage(
+          image,
+          0,
+          0,
+          width,
+          height
+        );
+
+        const mimeType = "image/jpeg";
+        const quality = 0.72;
+
+        const dataUrl = canvas.toDataURL(
+          mimeType,
+          quality
+        );
+
+        const base64 = dataUrl.split(",")[1];
+
+        const compressedSize = Math.round(
+          (base64.length * 3) / 4
+        );
+
+        resolve({
+          base64: base64,
+          mimeType: mimeType,
+          size: compressedSize
+        });
+      };
+
+      image.onerror = function() {
+        reject(new Error("Invalid image file"));
+      };
+
+      image.src = readerEvent.target.result;
+    };
+
+    reader.onerror = function() {
+      reject(new Error("Unable to read image"));
+    };
+
+    reader.readAsDataURL(file);
+  });
+}
+
+function removeDeliveryPhoto() {
+  window.deliveryPhotoData = null;
+  const photoInput = document.getElementById("deliveryPhoto");
+  const preview = document.getElementById("deliveryPreview");
+  const previewBox = document.getElementById("deliveryPreviewBox");
+  const uploadArea = document.getElementById("deliveryUploadArea");
+  const photoStatus = document.getElementById("photoStatus");
+
+  if (photoInput) {
+    photoInput.value = "";
+  }
+
+  if (preview) {
+    preview.src = "";
+  }
+
+  if (photoStatus) {
+    photoStatus.textContent = "";
+  }
+
+  if (previewBox) {
+    previewBox.style.display = "none";
+  }
+
+  if (uploadArea) {
+    uploadArea.style.display = "flex";
+  }
 }

@@ -23,7 +23,7 @@ async function apiGet(endpoint, params = {}) {
 
   return await response.json();
 }
-async function saveCustomer(customer) {
+async function saveCustomer(customer, photo) {
   await fetch(CONFIG.API_BASE_URL, {
     method: "POST",
     mode: "no-cors",
@@ -32,12 +32,13 @@ async function saveCustomer(customer) {
     },
     body: JSON.stringify({
       action: "addCustomer",
-      customer: customer
+      customer: customer,
+      photo: photo || null
     })
   });
 
-return {
-  success: true,
-  message: "Customer Added Successfully ✅"
-};
+  return {
+    success: true,
+    message: "Customer Added Successfully ✅"
+  };
 }
