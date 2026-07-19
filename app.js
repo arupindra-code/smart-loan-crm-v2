@@ -31,11 +31,57 @@ function renderDashboard(){
 
     <div class="page">
       <div class="stat-grid">
-        <div class="stat-card"><div class="stat-number">0</div><div class="stat-label">Today Login</div></div>
-        <div class="stat-card"><div class="stat-number">0</div><div class="stat-label">Active Customers</div></div>
-        <div class="stat-card"><div class="stat-number">0</div><div class="stat-label">Disbursement</div></div>
-        <div class="stat-card"><div class="stat-number">0</div><div class="stat-label">Trash</div></div>
-      </div>
+
+  <div class="stat-card">
+    <div
+      class="stat-number"
+      id="last7DaysLoginCount"
+    >
+      0
+    </div>
+    <div class="stat-label">
+      Last 7 Days Login
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div
+      class="stat-number"
+      id="lastMonthLoginCount"
+    >
+      0
+    </div>
+    <div class="stat-label">
+      Last Month Login
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div
+      class="stat-number"
+      id="last7DaysDisbursementCount"
+    >
+      0
+    </div>
+    <div class="stat-label">
+      Last 7 Days Disbursement
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div
+      class="stat-number"
+      id="lastMonthDisbursementCount"
+    >
+      0
+    </div>
+    <div class="stat-label">
+      Last Month Disbursement
+    </div>
+  </div>
+
+</div>
+
 
       <div class="quick-actions">
         <div class="action-card" onclick="Router.navigate('add-customer')">
@@ -57,6 +103,39 @@ function renderDashboard(){
 
     ${bottomNav("home")}
   `;
+  loadDashboardStats();
+}
+
+async function loadDashboardStats() {
+  try {
+    const stats = await getDashboardStats();
+
+    setDashboardCount(
+      "last7DaysLoginCount",
+      stats.last7DaysLogin
+    );
+
+    setDashboardCount(
+      "lastMonthLoginCount",
+      stats.lastMonthLogin
+    );
+
+    setDashboardCount(
+      "last7DaysDisbursementCount",
+      stats.last7DaysDisbursement
+    );
+
+    setDashboardCount(
+      "lastMonthDisbursementCount",
+      stats.lastMonthDisbursement
+    );
+
+  } catch (error) {
+    console.error(
+      "Dashboard statistics error:",
+      error
+    );
+  }
 }
 
 function renderPage(title, subtitle, active){
@@ -2170,5 +2249,15 @@ async function copyCustomerDetails() {
     textarea.remove();
 
     alert("Customer Details Copied ✅");
+  }
+}
+
+
+
+function setDashboardCount(id, value) {
+  const element = document.getElementById(id);
+
+  if (element) {
+    element.textContent = Number(value) || 0;
   }
 }

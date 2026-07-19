@@ -158,3 +158,53 @@ async function updateCustomer(
     success: true
   };
 }
+
+async function getDashboardStats() {
+  const url =
+    CONFIG.API_BASE_URL +
+    "?api=dashboardStats";
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(
+      "Dashboard statistics load failed"
+    );
+  }
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(
+      result.message ||
+      "Dashboard statistics load failed"
+    );
+  }
+
+  return result;
+}
+
+async function getDashboardStats() {
+  const url =
+    CONFIG.API_BASE_URL +
+    "?api=dashboardStats";
+
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error(
+      "Dashboard statistics load failed"
+    );
+  }
+
+  const result = await response.json();
+
+  if (!result.success) {
+    throw new Error(
+      result.message ||
+      "Dashboard statistics load failed"
+    );
+  }
+
+  return result;
+}
