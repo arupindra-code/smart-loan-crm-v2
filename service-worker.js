@@ -1,4 +1,4 @@
-const CACHE_NAME = "smart-loan-crm-v2-cache-v2";
+const CACHE_NAME = "smart-loan-crm-v2-cache-v3";
 
 const FILES_TO_CACHE = [
   "./",
