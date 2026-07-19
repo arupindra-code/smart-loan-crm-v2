@@ -841,7 +841,13 @@ function renderEmi() {
               <div id="ltvResult" class="result-ltv">0%</div>
             </div>
 
-            <div class="result-badge">EMI Results</div>
+            <button
+  type="button"
+  class="copy-emi-result-btn"
+  onclick="copyEmiResults()"
+>
+  📋 Copy
+</button>
           </div>
 
           <div id="emiTable" class="emi-result-list"></div>
@@ -930,6 +936,19 @@ function calculateAllEMI() {
   document.getElementById("ltvResult").innerText =
     ltv.toFixed(2) + "%";
 
+window.latestEmiCopyData = {
+  onRoadPrice: onRoadPrice,
+  loanAmount: loanAmount,
+  interestRate: interestRate,
+  productName:
+    document.getElementById("productType")
+      .options[
+        document.getElementById("productType").selectedIndex
+      ].text,
+  ltv: ltv,
+  results: []
+};
+
   var tenures = [18, 24, 30, 36];
 
   var emiTable = document.getElementById("emiTable");
@@ -948,6 +967,11 @@ function calculateAllEMI() {
       tenure,
       interestRate
     );
+    
+    window.latestEmiCopyData.results.push({
+  tenure: tenure,
+  emi: Number(emiValue)
+});
 
     emiTable.innerHTML += `
       <div class="premium-emi-row">
@@ -979,6 +1003,7 @@ function calculateAllEMI() {
 
 
 function clearEmiCalculator() {
+  window.latestEmiCopyData = null;
   document.getElementById("onRoadPrice").value = "";
   document.getElementById("loanAmount").value = "";
   document.getElementById("productType").value = "13.9";
@@ -1997,6 +2022,63 @@ async function updateSelectedCustomer() {
       updateButton.disabled = false;
       updateButton.textContent = "Update Customer";
     }
+  }
+}
+
+async function copyEmiResults() {
+  const data = window.latestEmiCopyData;
+
+  if (
+    !data ||
+    !data.results ||
+    data.results.length === 0
+  ) {
+    alert("Please calculate EMI first");
+    return;
+  }
+
+  const formatAmount = function(value) {
+    return Number(value || 0).toLocaleString("en-IN", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+  };
+
+  const resultLines = data.results.map(function(item) {
+    return (
+      item.tenure +
+      " Months - ₹" +
+      formatAmount(item.emi)
+    );
+  });
+
+ const copyText = [
+  "━━━━━━━━━━━━━━",
+  "",
+  resultLines.join("\n"),
+  "",
+  "━━━━━━━━━━━━━━"
+].join("\n");
+
+  try {
+    await navigator.clipboard.writeText(copyText);
+
+    alert("EMI Results Copied ✅");
+
+  } catch (error) {
+    const textarea = document.createElement("textarea");
+
+    textarea.value = copyText;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+
+    document.body.appendChild(textarea);
+    textarea.select();
+
+    document.execCommand("copy");
+    textarea.remove();
+
+    alert("EMI Results Copied ✅");
   }
 }
 
